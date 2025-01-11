@@ -3,7 +3,7 @@ import { Bindable, usingBindables } from "../intfs/bindable";
 import { GlUniformInfo, GlAttributeInfo, getUniformInfo, getAttribInfo } from "./gl-info";
 import { GlWrapper } from "./gl-wrapper";
 import { GlTexture } from "./gl-texture";
-import { isBoolArray, isNumberArray } from "./type-guards";
+import { isBoolArray, isNumberArray } from "../utils/type-guards";
 import * as E from "./gl-enum";
 
 export type GlVertShader = GlShader & { type: E.ShaderType.Vertex };

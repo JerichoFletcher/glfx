@@ -11,6 +11,7 @@ import { GlBufferLayout } from "../gl/gl-layout";
 import { GlVAO } from "../gl/gl-vao";
 import { GlTexture } from "../gl/gl-texture";
 import { usingBindables } from "../intfs/bindable";
+import usePrevious from "../utils/use-previous";
 
 const GLWContext = createContext<GlWrapper | null>(null);
 const vData = new Float32Array([
@@ -35,8 +36,9 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
   // const vidRef = useRef<HTMLVideoElement>(null);
 
   const [imgUrl , setImgUrl] = useState<string>("");
+  const prevImgUrl = usePrevious(imgUrl);
 
-  const quadScale = [1, 1];
+  const quadScale = [0, 0];
   const imgSize = [0, 0];
   let doUpdateScale = true;
 
@@ -52,7 +54,7 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
     const imgAspect = imgW / imgH;
     
     quadScale[0] = 1;
-    quadScale[1] = 1
+    quadScale[1] = 1;
     if(imgAspect > cnvAspect){
       quadScale[1] = cnvAspect / imgAspect;
     }else{
@@ -182,6 +184,11 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
       glwRef.current = null;
     }
   });
+
+  useEffect(() => {
+    if(!prevImgUrl || prevImgUrl === imgUrl)return;
+    URL.revokeObjectURL(prevImgUrl);
+  }, [imgUrl, prevImgUrl]);
 
   return (
     <GLWContext.Provider value={glwRef.current}>
