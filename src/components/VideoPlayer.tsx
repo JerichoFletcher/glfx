@@ -5,15 +5,13 @@ import { BufferDataUsage, BufferType, DrawMode, DType, ShaderType, TextureMagFil
 import { GlProgram, GlShader } from "../gl/gl-shader-program";
 import { GlWrapper } from "../gl/gl-wrapper";
 import "./VideoPlayer.css";
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GlBuffer } from "../gl/gl-buffer";
 import { GlBufferLayout } from "../gl/gl-layout";
 import { GlVAO } from "../gl/gl-vao";
 import { GlTexture } from "../gl/gl-texture";
 import { usingBindables } from "../intfs/bindable";
-import usePrevious from "../utils/use-previous";
 
-const GLWContext = createContext<GlWrapper | null>(null);
 const vData = new Float32Array([
   -1, +1, 0, 0,
   +1, +1, 1, 0,
@@ -23,81 +21,65 @@ const vData = new Float32Array([
 const eData = new Uint8Array([0, 1, 2, 0, 2, 3]);
 
 interface CanvasProps{
+  onInit: (glw: GlWrapper) => void;
+}
+
+const Canvas: React.FC<CanvasProps> = React.memo(({
+  onInit,
+}) => {
+  const cnvRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const cnv = cnvRef.current;
+    if(!cnv)return;
+
+    const glw = GlWrapper.latest(cnv);
+    console.log("Loaded GL version:", glw.version);
+    console.log("Loaded GL extension:", [...glw.funcs.loadedExtensions.keys()]);
+    onInit(glw);
+
+    return () => {
+      glw.dispose();
+    }
+  }, [onInit]);
+
+  return <canvas id="video-canvas" ref={cnvRef} className="full"/>;
+});
+
+interface VideoPlayerProps{
   filters: string[];
 }
 
-const VideoPlayer: React.FC<CanvasProps> = () => {
-  const glwRef = useRef<GlWrapper | null>(null);
-  const glTexRef = useRef<GlTexture | null>(null);
-
-  const cnvRef = useRef<HTMLCanvasElement>(null);
+const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   const inpRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   // const vidRef = useRef<HTMLVideoElement>(null);
 
-  const [imgUrl , setImgUrl] = useState<string>("");
-  const prevImgUrl = usePrevious(imgUrl);
+  const [glw, setGlw] = useState<GlWrapper | null>(null);
+  const [glTex, setGlTex] = useState<GlTexture | null>(null);
 
-  const quadScale = [0, 0];
-  const imgSize = [0, 0];
-  let doUpdateScale = true;
+  const onCanvasInit = useCallback((glw: GlWrapper) => {
+    setGlw(glw);
+  }, []);
 
-  const recomputeQuadScale = () => {
-    const cnv = cnvRef.current;
-    if(!cnv)return;
-
+  const recomputeQuadScale = (tex: GlTexture, cnv: HTMLCanvasElement) => {
     const [cnvW, cnvH] = [cnv.width, cnv.height];
-    const [imgW, imgH] = imgSize;
-    if(imgW === 0 || imgH === 0)return;
+    if(tex.width === 0 || tex.height === 0)return [0, 0];
     
     const cnvAspect = cnvW / cnvH;
-    const imgAspect = imgW / imgH;
+    const imgAspect = tex.width / tex.height;
     
-    quadScale[0] = 1;
-    quadScale[1] = 1;
+    let [sclW, sclH] = [1, 1];
     if(imgAspect > cnvAspect){
-      quadScale[1] = cnvAspect / imgAspect;
+      sclH = cnvAspect / imgAspect;
     }else{
-      quadScale[0] = imgAspect / cnvAspect;
+      sclW = imgAspect / cnvAspect;
     }
 
-    doUpdateScale = true;
-  }
+    return [sclW, sclH];
+  };
 
-  const loadImageData = (img: HTMLImageElement) => {
-    const glTex = glTexRef.current;
-    if(!glTex)return;
-
-    const cnv = cnvRef.current;
-    if(cnv){
-      imgSize[0] = img.naturalWidth;
-      imgSize[1] = img.naturalHeight;
-      recomputeQuadScale();
-    }
-
-    const gl = glTex.contextWrapper.context.gl;
-    glTex.setData(img, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
-  }
-
-  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if(!e.target.files || e.target.files.length === 0)return;
-
-    const file = e.target.files.item(0);
-    if(!file)return;
-    
-    if(file && imgRef.current){
-      const url = URL.createObjectURL(file);
-      setImgUrl(url);
-    }
-  }
-
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const glTex = glTexRef.current;
-    if(glTex)loadImageData(e.currentTarget);
-  }
-
-  const doRender = () => {
-    const glw = glwRef.current;
+  const doRender = useCallback(() => {
     if(!glw)return;
 
     const vert = GlShader.create(glw, ShaderType.Vertex, vertSrc);
@@ -126,7 +108,7 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
     const uTexture = GlTexture.create(glw, 0);
     uTexture.setFilter(TextureMinFilter.Linear, TextureMagFilter.Linear);
     uTexture.setTextureWrap(TextureWrap.ClampToEdge, TextureWrap.ClampToEdge);
-    glTexRef.current = uTexture;
+    setGlTex(uTexture);
     
     usingBindables([program], () => {
       program.setUniform("u_texture", uTexture);
@@ -139,25 +121,19 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       usingBindables([program], () => {
-        if(doUpdateScale){
-          program.setUniform("u_scale", quadScale);
-          doUpdateScale = false;
-        }
+        const quadScale = recomputeQuadScale(uTexture, glw.canvas);
+        program.setUniform("u_scale", quadScale);
         vao.drawElements(program, DrawMode.Triangles, eData.length, DType.UByte, 0);
       });
 
       requestAnimationFrame(renderLoop);
     }
     requestAnimationFrame(renderLoop);
-  }
+  }, [glw]);
 
   useEffect(() => {
-    const cnv = cnvRef.current;
-    if(!cnv)return;
-
-    const glw = GlWrapper.latest(cnv);
-    console.log("Loaded GL version:", glw.version);
-    console.log("Loaded GL extension:", [...glw.funcs.loadedExtensions.keys()]);
+    if(!glw)return;
+    const cnv = glw.canvas;
 
     const resizeCanvas = () => {
       const dispW = cnv.clientWidth;
@@ -168,44 +144,61 @@ const VideoPlayer: React.FC<CanvasProps> = () => {
         cnv.height = dispH;
 
         glw.resizeViewport();
-        recomputeQuadScale();
       }
     }
     
-    resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
-
-    glwRef.current = glw;
+    resizeCanvas();
     doRender();
+  }, [glw, doRender]);
 
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-      glwRef.current?.dispose();
-      glwRef.current = null;
+  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!e.target.files || e.target.files.length === 0)return;
+
+    const file = e.target.files.item(0);
+    if(!file)return;
+    
+    if(file && imgRef.current){
+      const url = URL.createObjectURL(file);
+      
+      const oldUrl = imgRef.current.src;
+      if(oldUrl)URL.revokeObjectURL(oldUrl);
+
+      imgRef.current.src = url;
     }
-  });
+  }
 
-  useEffect(() => {
-    if(!prevImgUrl || prevImgUrl === imgUrl)return;
-    URL.revokeObjectURL(prevImgUrl);
-  }, [imgUrl, prevImgUrl]);
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    if(glTex){
+      loadImageData(glTex, e.currentTarget);
+    }else{
+      console.error("Failed to upload image data as the main GL texture is uninitialized");
+    }
+  }
+
+  const loadImageData = (tex: GlTexture, img: HTMLImageElement) => {
+    if(glw){
+      const gl = glw.context.gl;
+      tex.setData(img, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
+    }
+  }
 
   return (
-    <GLWContext.Provider value={glwRef.current}>
-      <div id="video-player">
-        <div id="video-canvas-wrapper">
-          <canvas id="video-canvas" ref={cnvRef}/>
+    <>
+      <div id="video-player" className="flex-column full">
+        <div id="video-canvas-wrapper" className="full">
+          <Canvas onInit={onCanvasInit}/>
         </div>
-        <div id="video-controls">
+        <div id="video-controls" className="flex-row">
           <button type="button" onClick={() => inpRef.current?.click()}>Select file...</button>
         </div>
       </div>
       <>
         <input ref={inpRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileInput}/>
-        <img ref={imgRef} src={imgUrl} style={{ display: "none" }} onLoad={onImageLoad}/>
+        <img ref={imgRef} style={{ display: "none" }} onLoad={onImageLoad}/>
         {/* <video ref={vidRef} style={{ display: "none" }}/> */}
       </>
-    </GLWContext.Provider>
+    </>
   );
 }
 

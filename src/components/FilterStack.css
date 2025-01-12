@@ -1,0 +1,16 @@
+#filter-stack {
+  width: 30vw;
+  padding: 10px;
+}
+
+#filter-stack-list {
+  list-style: none;
+  padding: 0;
+}
+
+#filter-stack-list li {
+  box-sizing: border-box;
+  padding: 10px 0 10px;
+  justify-content: space-between;
+  border-bottom: 1px solid gray;
+}

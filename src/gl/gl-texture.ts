@@ -8,6 +8,8 @@ export class GlTexture implements Disposable, Bindable{
   #glWrapper: GlWrapper;
   #texHandle: DependsOnDisposedState<WebGLTexture>;
   #texUnit: GLuint;
+  #width: number;
+  #height: number;
 
   private constructor(glWrapper: GlWrapper, texUnit: GLuint){
     this.#glWrapper = glWrapper;
@@ -24,6 +26,8 @@ export class GlTexture implements Disposable, Bindable{
 
     this.#texHandle = DependsOnDisposedState.validBeforeDisposed(this, texHandle);
     this.#texUnit = texUnit;
+    this.#width = 0;
+    this.#height = 0;
     this.#disposed = false;
     this.#glWrapper.registerResource(this);
   }
@@ -41,8 +45,12 @@ export class GlTexture implements Disposable, Bindable{
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     if(data instanceof HTMLImageElement){
       gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, type, data);
+      this.#width = data.naturalWidth;
+      this.#height = data.naturalHeight;
     }else{
       gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width!, height!, 0, format, type, data);
+      this.#width = width!;
+      this.#height = height!;
     }
   }
 
@@ -107,6 +115,14 @@ export class GlTexture implements Disposable, Bindable{
 
   get textureUnit(): GLuint{
     return this.#texUnit;
+  }
+
+  get width(): number{
+    return this.#width;
+  }
+
+  get height(): number{
+    return this.#height;
   }
 
   get isDisposed(): boolean{
