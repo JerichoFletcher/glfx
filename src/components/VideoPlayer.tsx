@@ -108,6 +108,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     const uTexture = GlTexture.create(glw, 0);
     uTexture.setFilter(TextureMinFilter.Linear, TextureMagFilter.Linear);
     uTexture.setTextureWrap(TextureWrap.ClampToEdge, TextureWrap.ClampToEdge);
+
+    if(imgRef.current && imgRef.current.src)loadImageData(uTexture, imgRef.current);
     setGlTex(uTexture);
     
     usingBindables([program], () => {

@@ -1,6 +1,8 @@
 #filter-stack {
   width: 30vw;
   padding: 10px;
+  background-color: var(--background-color-dark);
+  border-left: 1px solid var(--border-color-dark);
 }
 
 #filter-stack-list {
@@ -10,7 +12,7 @@
 
 #filter-stack-list li {
   box-sizing: border-box;
-  padding: 10px 0 10px;
+  padding: 10px 0;
   justify-content: space-between;
-  border-bottom: 1px solid gray;
+  border-bottom: 1px solid var(--border-color-dark);
 }

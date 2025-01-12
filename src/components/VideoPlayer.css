@@ -9,4 +9,6 @@
 #video-controls {
   flex-shrink: 0;
   padding: 10px;
+  background-color: var(--background-color-dark);
+  border-top: 1px solid var(--border-color-dark);
 }
