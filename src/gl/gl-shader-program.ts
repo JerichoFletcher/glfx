@@ -96,6 +96,8 @@ export class GlProgram implements Disposable, Bindable{
     gl.attachShader(program, vert.shader);
     gl.attachShader(program, frag.shader);
     gl.linkProgram(program);
+    gl.detachShader(program, vert.shader);
+    gl.detachShader(program, frag.shader);
 
     if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
       const err = gl.getError();
@@ -298,8 +300,6 @@ export class GlProgram implements Disposable, Bindable{
 
   dispose(): void{
     if(!this.#disposed){
-      this.#glWrapper.context.gl.detachShader(this.#progHandle.value, this.#vert.shader);
-      this.#glWrapper.context.gl.detachShader(this.#progHandle.value, this.#frag.shader);
       this.#glWrapper.context.gl.deleteProgram(this.#progHandle.value);
       this.#disposed = true;
     }

@@ -1,16 +1,18 @@
 import vertSrc from "../shaders/base.vert.glsl";
 import fragSrc from "../shaders/base.frag.glsl";
 
+import "./VideoPlayer.css";
+import React, { useCallback, useEffect, useRef } from "react";
+import Canvas from "./Canvas";
 import { BufferDataUsage, BufferType, DrawMode, DType, ShaderType, TextureMagFilter, TextureMinFilter, TextureWrap } from "../gl/gl-enum";
 import { GlProgram, GlShader } from "../gl/gl-shader-program";
 import { GlWrapper } from "../gl/gl-wrapper";
-import "./VideoPlayer.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GlBuffer } from "../gl/gl-buffer";
 import { GlBufferLayout } from "../gl/gl-layout";
 import { GlVAO } from "../gl/gl-vao";
 import { GlTexture } from "../gl/gl-texture";
 import { usingBindables } from "../intfs/bindable";
+import { FilterInstance } from "../impl/filter";
 
 const vData = new Float32Array([
   -1, +1, 0, 0,
@@ -18,49 +20,57 @@ const vData = new Float32Array([
   +1, -1, 1, 1,
   -1, -1, 0, 1,
 ]);
-const eData = new Uint8Array([0, 1, 2, 0, 2, 3]);
-
-interface CanvasProps{
-  onInit: (glw: GlWrapper) => void;
-}
-
-const Canvas: React.FC<CanvasProps> = React.memo(({
-  onInit,
-}) => {
-  const cnvRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const cnv = cnvRef.current;
-    if(!cnv)return;
-
-    const glw = GlWrapper.latest(cnv);
-    console.log("Loaded GL version:", glw.version);
-    console.log("Loaded GL extension:", [...glw.funcs.loadedExtensions.keys()]);
-    onInit(glw);
-
-    return () => {
-      glw.dispose();
-    }
-  }, [onInit]);
-
-  return <canvas id="video-canvas" ref={cnvRef} className="full"/>;
-});
+const eData = new Uint8Array([0, 1, 2, 3]);
 
 interface VideoPlayerProps{
-  filters: string[];
+  onCanvasInit: (glw: GlWrapper) => void;
+  filters: FilterInstance[];
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = () => {
+const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
+  onCanvasInit,
+}) => {
   const inpRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  // const vidRef = useRef<HTMLVideoElement>(null);
 
-  const [glw, setGlw] = useState<GlWrapper | null>(null);
-  const [glTex, setGlTex] = useState<GlTexture | null>(null);
+  const glwRef = useRef<GlWrapper | null>(null);
+  const glTexRef = useRef<GlTexture | null>(null);
 
-  const onCanvasInit = useCallback((glw: GlWrapper) => {
-    setGlw(glw);
-  }, []);
+  const onInit = useCallback((glwVal: GlWrapper) => {
+    onCanvasInit(glwVal);
+    glwRef.current = glwVal;
+  }, [onCanvasInit]);
+
+  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(!e.target.files || e.target.files.length === 0)return;
+
+    const file = e.target.files.item(0);
+    if(!file)return;
+    
+    if(file && imgRef.current){
+      const url = URL.createObjectURL(file);
+      
+      const oldUrl = imgRef.current.src;
+      if(oldUrl)URL.revokeObjectURL(oldUrl);
+
+      imgRef.current.src = url;
+    }
+  }
+
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    if(glTexRef.current){
+      loadImageData(glTexRef.current, e.currentTarget);
+    }else{
+      console.error("Failed to upload image data as the main GL texture is uninitialized");
+    }
+  }
+
+  const loadImageData = useCallback((tex: GlTexture, img: HTMLImageElement) => {
+    if(glwRef.current){
+      const gl = glwRef.current.context.gl;
+      tex.setData(img, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
+    }
+  }, [glwRef]);
 
   const recomputeQuadScale = (tex: GlTexture, cnv: HTMLCanvasElement) => {
     const [cnvW, cnvH] = [cnv.width, cnv.height];
@@ -80,6 +90,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
   };
 
   const doRender = useCallback(() => {
+    const glw = glwRef.current;
     if(!glw)return;
 
     const vert = GlShader.create(glw, ShaderType.Vertex, vertSrc);
@@ -110,7 +121,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
     uTexture.setTextureWrap(TextureWrap.ClampToEdge, TextureWrap.ClampToEdge);
 
     if(imgRef.current && imgRef.current.src)loadImageData(uTexture, imgRef.current);
-    setGlTex(uTexture);
+    glTexRef.current = uTexture;
     
     usingBindables([program], () => {
       program.setUniform("u_texture", uTexture);
@@ -125,17 +136,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
       usingBindables([program], () => {
         const quadScale = recomputeQuadScale(uTexture, glw.canvas);
         program.setUniform("u_scale", quadScale);
-        vao.drawElements(program, DrawMode.Triangles, eData.length, DType.UByte, 0);
+        vao.drawElements(program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
       });
 
       requestAnimationFrame(renderLoop);
     }
     requestAnimationFrame(renderLoop);
-  }, [glw]);
+  }, [glwRef, loadImageData]);
 
   useEffect(() => {
-    if(!glw)return;
-    const cnv = glw.canvas;
+    if(!glwRef.current)return;
+    const cnv = glwRef.current.canvas;
 
     const resizeCanvas = () => {
       const dispW = cnv.clientWidth;
@@ -145,51 +156,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
         cnv.width = dispW;
         cnv.height = dispH;
 
-        glw.resizeViewport();
+        glwRef.current?.resizeViewport();
       }
     }
     
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     doRender();
-  }, [glw, doRender]);
-
-  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if(!e.target.files || e.target.files.length === 0)return;
-
-    const file = e.target.files.item(0);
-    if(!file)return;
-    
-    if(file && imgRef.current){
-      const url = URL.createObjectURL(file);
-      
-      const oldUrl = imgRef.current.src;
-      if(oldUrl)URL.revokeObjectURL(oldUrl);
-
-      imgRef.current.src = url;
-    }
-  }
-
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    if(glTex){
-      loadImageData(glTex, e.currentTarget);
-    }else{
-      console.error("Failed to upload image data as the main GL texture is uninitialized");
-    }
-  }
-
-  const loadImageData = (tex: GlTexture, img: HTMLImageElement) => {
-    if(glw){
-      const gl = glw.context.gl;
-      tex.setData(img, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
-    }
-  }
+  }, [glwRef, doRender]);
 
   return (
     <>
       <div id="video-player" className="flex-column full">
         <div id="video-canvas-wrapper" className="full">
-          <Canvas onInit={onCanvasInit}/>
+          <Canvas onInit={onInit}/>
         </div>
         <div id="video-controls" className="flex-row">
           <button type="button" onClick={() => inpRef.current?.click()}>Select file...</button>
@@ -202,6 +182,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = () => {
       </>
     </>
   );
-}
+});
 
 export default VideoPlayer;

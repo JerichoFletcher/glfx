@@ -1,0 +1,19 @@
+.dropdown-content {
+  position: absolute;
+  right: 10px;
+  z-index: 1;
+}
+
+.dropdown-content.hide {
+  display: none;
+}
+
+.dropdown-item {
+  background-color: var(--background-color-light-0);
+  padding: 5px 30px 5px 10px;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus{
+  background-color: var(--background-color-light-1);
+}

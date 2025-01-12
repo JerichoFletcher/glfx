@@ -5,25 +5,18 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: var(--background-color-light);
+  background-color: var(--background-color-dark-1);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --background-color-light: #242424;
-  --background-color-dark: #202020;
+  --background-color-dark-0: #202020;
+  --background-color-dark-1: #242424;
+  --background-color-light-0: #404040;
+  --background-color-light-1: #484848;
   --border-color-dark: #404040;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
 }
 
 html, body {
@@ -36,9 +29,9 @@ html, body {
   flex-direction: row;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+p {
+  margin: 0;
+  padding: 0;
 }
 
 button, input[type="file"] {
@@ -63,7 +56,11 @@ button:focus-visible {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    --background-color-dark-0: #eeeeee;
+    --background-color-dark-1: #d8d8d8;
+    --background-color-light-0: #ffffff;
+    --background-color-light-1: #f8f8f8;
+    --border-color-dark: #aaaaaa;
   }
   a:hover {
     color: #747bff;
