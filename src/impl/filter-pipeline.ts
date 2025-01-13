@@ -4,6 +4,7 @@ import { GlProgram } from "../gl/gl-shader-program";
 import { GlTexture } from "../gl/gl-texture";
 import { GlVAO } from "../gl/gl-vao";
 import { GlWrapper } from "../gl/gl-wrapper";
+import { usingBindables } from "../intfs/bindable";
 import { Disposable } from "../intfs/disposable";
 import { FilterInstance } from "./filter";
 
@@ -20,7 +21,7 @@ export class FilterPipeline implements Disposable{
     const framebuffers: GlFBO[] = [];
     for(let i = 0; i < 2; i++){
       const tex = GlTexture.create(glWrapper, texUnit);
-      tex.setFilter(E.TextureMinFilter.Linear, E.TextureMagFilter.Linear);
+      tex.setFilter(E.TextureMinFilter.Nearest, E.TextureMagFilter.Nearest);
       tex.setTextureWrap(E.TextureWrap.ClampToEdge, E.TextureWrap.ClampToEdge);
       textures.push(tex);
 
@@ -41,21 +42,45 @@ export class FilterPipeline implements Disposable{
     mode: E.DrawMode,
     count: GLsizei,
     type: E.DType,
-    offset: GLintptr
+    offset: GLintptr,
   ): void{
-    const gl = this.#glWrapper.context.gl;
-
     if(!inputImage.complete || inputImage.naturalWidth === 0)return;
+    
+    const gl = this.#glWrapper.context.gl;
+    this.#textures[0].setData(inputImage, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
+    this.#textures[1].setData(null, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, inputImage.naturalWidth, inputImage.naturalHeight);
+    this.#glWrapper.resizeViewport(0, 0, inputImage.naturalWidth, inputImage.naturalHeight);
 
-    if(stack.length > 0){
-      console.log(stack);
+    for(let i = 0; i < stack.length; i++){
+      const inTex = this.#textures[i % 2];
+      const outFBO = this.#framebuffers[(i + 1) % 2];
+
+      this.applyFilter(stack[i], vao, inTex, outFBO, mode, count, type, offset);
     }
 
-    this.#textures[0].setData(inputImage, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
-    mainProgram.setUniform("u_texture", this.#textures[0]);
+    mainProgram.setUniform("u_texture", this.#textures[stack.length % 2]);
     mainProgram.setUniform("u_scale", this.computeQuadScale(inputImage, this.#glWrapper.canvas));
+    this.#glWrapper.resizeViewport();
 
     vao.drawElements(mainProgram, mode, count, type, offset);
+  }
+
+  private applyFilter(
+    filterInstance: FilterInstance,
+    vao: GlVAO,
+    inTex: GlTexture,
+    outFBO: GlFBO,
+    mode: E.DrawMode,
+    count: GLsizei,
+    type: E.DType,
+    offset: GLintptr,
+  ): void{
+    const prog = filterInstance.filter.program;
+    prog.setUniform("u_texture", inTex);
+    
+    usingBindables([outFBO], () => {
+      vao.drawElements(filterInstance.filter.program, mode, count, type, offset);
+    });
   }
 
   private computeQuadScale(img: HTMLImageElement | null, cnv: HTMLCanvasElement){

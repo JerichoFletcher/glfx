@@ -37,12 +37,13 @@ export class GlTexture implements Disposable, Bindable{
   }
 
   setData(image: HTMLImageElement, format: GLenum, internalFormat: GLenum, type: GLenum): void;
-  setData(rawData: Uint8Array, format: GLenum, internalFormat: GLenum, type: GLenum, width: number, height: number): void;
-  setData(data: HTMLImageElement | Uint8Array, format: GLenum, internalFormat: GLenum, type: GLenum, width?: number, height?: number): void{
+  setData(rawData: Uint8Array | null, format: GLenum, internalFormat: GLenum, type: GLenum, width: number, height: number): void;
+  setData(data: HTMLImageElement | Uint8Array | null, format: GLenum, internalFormat: GLenum, type: GLenum, width?: number, height?: number): void{
     this.bind();
     const gl = this.#glWrapper.context.gl;
 
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     if(data instanceof HTMLImageElement){
       gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, format, type, data);
       this.#width = data.naturalWidth;

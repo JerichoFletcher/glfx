@@ -2,7 +2,7 @@ import vertSrc from "../shaders/base.vert.glsl";
 import fragSrc from "../shaders/base.frag.glsl";
 
 import "./VideoPlayer.css";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Canvas from "./Canvas";
 import { BufferDataUsage, BufferType, DrawMode, DType, ShaderType } from "../gl/gl-enum";
 import { GlProgram, GlShader } from "../gl/gl-shader-program";
@@ -14,10 +14,10 @@ import { FilterInstance } from "../impl/filter";
 import { FilterPipeline } from "../impl/filter-pipeline";
 
 const vData = new Float32Array([
-  -1, +1, 0, 0,
-  +1, +1, 1, 0,
-  +1, -1, 1, 1,
-  -1, -1, 0, 1,
+  -1, -1, 0, 0,
+  +1, -1, 1, 0,
+  +1, +1, 1, 1,
+  -1, +1, 0, 1,
 ]);
 const eData = new Uint8Array([0, 1, 2, 3]);
 
@@ -35,6 +35,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
   const inpRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const glwRef = useRef<GlWrapper | null>(null);
+
+  const [imgSrc, setImgSrc] = useState("");
 
   const onInit = useCallback((glwVal: GlWrapper) => {
     onCanvasInit(glwVal);
@@ -56,38 +58,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
       imgRef.current.src = url;
     }
   }
-
-  // const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  //   if(glTexRef.current){
-  //     loadImageData(glTexRef.current, e.currentTarget);
-  //   }else{
-  //     console.error("Failed to upload image data as the main GL texture is uninitialized");
-  //   }
-  // }
-
-  // const loadImageData = useCallback((tex: GlTexture, img: HTMLImageElement) => {
-  //   if(glwRef.current){
-  //     const gl = glwRef.current.context.gl;
-  //     tex.setData(img, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE);
-  //   }
-  // }, [glwRef]);
-
-  // const recomputeQuadScale = (img: HTMLImageElement | null, cnv: HTMLCanvasElement) => {
-  //   const [cnvW, cnvH] = [cnv.width, cnv.height];
-  //   if(!img || img.naturalWidth === 0 || img.naturalHeight === 0)return [0, 0];
-    
-  //   const cnvAspect = cnvW / cnvH;
-  //   const imgAspect = img.naturalWidth / img.naturalHeight;
-    
-  //   let [sclW, sclH] = [1, 1];
-  //   if(imgAspect > cnvAspect){
-  //     sclH = cnvAspect / imgAspect;
-  //   }else{
-  //     sclW = imgAspect / cnvAspect;
-  //   }
-
-  //   return [sclW, sclH];
-  // };
 
   useEffect(() => {
     if(!glwRef.current)return;
@@ -135,20 +105,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
     layout.configure(vao, program);
     vao.bindElementBuffer(ebo);
 
-    const renderLoop = () => {
-      if(glw.isDisposed)return;
+    const gl = glw.context.gl;
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-      const gl = glw.context.gl;
-      gl.clear(gl.COLOR_BUFFER_BIT);
-
-      if(imgRef.current){
-        pipeline?.consume(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
-      }
-
-      requestAnimationFrame(renderLoop);
+    if(imgSrc && imgRef.current){
+      pipeline?.consume(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
     }
-    requestAnimationFrame(renderLoop);
-  }, [glwRef, filters, pipeline]);
+  }, [glwRef, imgSrc, filters, pipeline]);
 
   return (
     <>
@@ -162,8 +125,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
       </div>
       <>
         <input ref={inpRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileInput}/>
-        <img ref={imgRef} style={{ display: "none" }}/>
-        {/* <video ref={vidRef} style={{ display: "none" }}/> */}
+        <img ref={imgRef} style={{ display: "none" }} onLoad={e => setImgSrc(e.currentTarget.src)}/>
       </>
     </>
   );
