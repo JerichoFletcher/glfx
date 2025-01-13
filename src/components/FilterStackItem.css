@@ -1,0 +1,21 @@
+.filter-stack-item {
+  box-sizing: border-box;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color-dark);
+}
+
+.filter-stack-button-group {
+  gap: 8px;
+}
+
+.filter-stack-button-group button {
+  width: 64px;
+  height: 64px;
+  padding: 8px;
+}
+
+.filter-stack-button-group button.small {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+}

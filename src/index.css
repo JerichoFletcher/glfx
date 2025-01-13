@@ -29,7 +29,7 @@ html, body {
   flex-direction: row;
 }
 
-p {
+p, h1, h2, h3, h4, h5, h6 {
   margin: 0;
   padding: 0;
 }
@@ -51,6 +51,9 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+button:disabled {
+  filter: saturate(0%) brightness(50%);
 }
 
 @media (prefers-color-scheme: light) {

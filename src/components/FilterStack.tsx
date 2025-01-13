@@ -3,6 +3,7 @@ import { Filter, FilterInstance } from "../impl/filter";
 import Dropdown from "./Dropdown";
 import "./FilterStack.css";
 import React from "react";
+import FilterStackItem from "./FilterStackItem";
 
 interface FilterStackProps{
   glw: GlWrapper;
@@ -10,6 +11,7 @@ interface FilterStackProps{
   filterOptions: Filter[];
   onAddFilter: (filter: FilterInstance) => void;
   onRemoveFilter: (index: number) => void;
+  onReorderFilter: (indexFrom: number, indexTo: number) => void;
 }
 
 const FilterStack: React.FC<FilterStackProps> = ({
@@ -17,7 +19,15 @@ const FilterStack: React.FC<FilterStackProps> = ({
   filterOptions,
   onAddFilter,
   onRemoveFilter,
+  onReorderFilter,
 }) => {
+  const createFilterInstance = (filter: Filter): FilterInstance => {
+    return {
+      filter,
+      args: Object.fromEntries(Object.entries(filter.params).map(([k, v]) => [k, v.default])),
+    }
+  }
+
   return (
     <div id="filter-stack" className="flex-column">
       <Dropdown
@@ -25,13 +35,18 @@ const FilterStack: React.FC<FilterStackProps> = ({
         name="Add filter..."
         className="width-full"
         options={filterOptions.map(f => f.name)}
-        onClickItem={(_, i) => onAddFilter({ filter: filterOptions[i], params: {}})}
+        onClickItem={(_, i) => onAddFilter(createFilterInstance(filterOptions[i]))}
       />
       <ol id="filter-stack-list" className="flex-column">{filters.map((f, i) => (
-        <li itemID={`filter-stack-item-${i}`} key={i} className="flex-row width-full">
-          <button type="button" onClick={() => onRemoveFilter(i)}>Remove</button>
-          <p>{f.filter.name}</p>
-        </li>
+        <FilterStackItem
+          key={i}
+          filterInstance={f}
+          canMoveUp={i > 0}
+          canMoveDown={i < filters.length - 1}
+          onRemove={() => onRemoveFilter(i)}
+          onReorderUp={() => onReorderFilter(i, i - 1)}
+          onReorderDown={() => onReorderFilter(i, i + 1)}
+        />
       ))}</ol>
     </div>
   );

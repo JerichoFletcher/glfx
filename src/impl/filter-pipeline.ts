@@ -75,11 +75,8 @@ export class FilterPipeline implements Disposable{
     type: E.DType,
     offset: GLintptr,
   ): void{
-    const prog = filterInstance.filter.program;
-    prog.setUniform("u_texture", inTex);
-    
     usingBindables([outFBO], () => {
-      vao.drawElements(filterInstance.filter.program, mode, count, type, offset);
+      filterInstance.filter.apply(filterInstance.args, vao, inTex, mode, count, type, offset);
     });
   }
 

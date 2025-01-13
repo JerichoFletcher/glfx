@@ -10,9 +10,3 @@
   overflow: auto;
   padding: 0;
 }
-
-#filter-stack-list li {
-  box-sizing: border-box;
-  padding: 10px 0;
-  justify-content: space-between;
-}
