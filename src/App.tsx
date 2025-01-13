@@ -54,7 +54,8 @@ function App(){
       return;
     }
 
-    setFilterOptions(getPresetFilterSet(glw));
+    const filterSet = getPresetFilterSet(glw);
+    setFilterOptions(filterSet);
   }, [glw]);
 
   return (

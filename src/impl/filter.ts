@@ -7,6 +7,8 @@ import { mat2, mat3, mat4 } from "gl-matrix";
 import { GlVAO } from "../gl/gl-vao";
 
 type FilterParam = {
+  alternateName?: string;
+} & ({
   type: "field";
   default: number;
   min?: number;
@@ -35,7 +37,7 @@ type FilterParam = {
 } | {
   type: "prov";
   default: UniformType;
-};
+});
 
 export interface FilterParams{
   readonly [key: string]: Readonly<FilterParam>;
@@ -45,7 +47,14 @@ export interface FilterArgs{
   [key: string]: UniformType;
 }
 
+export interface FilterInstance{
+  filter: Filter;
+  args: FilterArgs;
+}
+
 export class Filter implements Disposable{
+  static readonly #filterProvidedUniforms = ["u_texture", "u_resolution"];
+
   #disposed: boolean;
   #glWrapper: GlWrapper;
   #name: string;
@@ -66,7 +75,7 @@ export class Filter implements Disposable{
 
     if(!prog.uniforms.has("u_texture"))throw new Error("Invalid filter: input texture uniform 'u_texture' required");
     for(const uniform of this.#prog.value.uniforms.values()){
-      if(uniform.name === "u_texture")continue;
+      if(Filter.#filterProvidedUniforms.includes(uniform.name))continue;
 
       const param = params[uniform.name];
       if(!param)throw new Error(`Invalid filter: no parameter found for uniform '${uniform.name}'`);
@@ -80,14 +89,27 @@ export class Filter implements Disposable{
           case E.DType.UShort:
           case E.DType.Int:
           case E.DType.UInt:
-            valid = (param.type === "field" || param.type === "slider")
+            valid = (
+              uniform.size === 1
+              && (param.type === "field" || param.type === "slider")
               && param.step === 1
               && Number.isInteger(param.min)
               && Number.isInteger(param.max)
-              && Number.isInteger(param.default);
+              && Number.isInteger(param.default)
+            ) || (
+              uniform.size !== 1
+              && param.type === "matrix"
+              && !param.default.some(v => !Number.isInteger(v))
+            );
             break;
           case E.DType.Float:
-            valid = param.type === "field" || param.type === "slider";
+            valid = (
+              uniform.size === 1
+              && (param.type === "field" || param.type === "slider")
+            ) || (
+              uniform.size !== 1
+              && param.type === "matrix"
+            );
             break;
           case E.DType.Bool:
             valid = param.type === "check";
@@ -142,8 +164,10 @@ export class Filter implements Disposable{
     offset: GLintptr,
   ): void{
     this.#prog.value.setUniform("u_texture", inTex);
+    this.#prog.value.setUniformIfExists("u_resolution", [inTex.width, inTex.height]);
+
     for(const uniformName of this.#prog.value.uniforms.keys()){
-      if(uniformName === "u_texture")continue;
+      if(Filter.#filterProvidedUniforms.includes(uniformName))continue;
       
       const uniformVal = args[uniformName];
       this.#prog.value.setUniform(uniformName, uniformVal);
@@ -177,9 +201,4 @@ export class Filter implements Disposable{
       this.#disposed = true;
     }
   }
-}
-
-export interface FilterInstance{
-  filter: Filter;
-  args: FilterArgs;
 }

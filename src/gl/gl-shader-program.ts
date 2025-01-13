@@ -145,6 +145,11 @@ export class GlProgram implements Disposable, Bindable{
     this.#glWrapper.context.gl.useProgram(null);
   }
 
+  setUniformIfExists(name: string, val: UniformType): void{
+    if(!this.#unifs.has(name))return;
+    this.setUniform(name, val);
+  }
+
   setUniform(name: string, val: UniformType): void{
     usingBindables([this], () => {
       const gl = this.#glWrapper.context.gl;
@@ -153,8 +158,16 @@ export class GlProgram implements Disposable, Bindable{
 
       switch(info.type){
         case E.DType.Bool:
-          if(typeof val !== "boolean")throw new Error(`Wrong data type for uniform ${name}; expected boolean, found ${typeof val}`);
-          gl.uniform1i(info.location, val ? 1 : 0);
+          if(info.size === 1){
+            if(typeof val !== "boolean")throw new Error(`Wrong data type for uniform ${name}; expected boolean, found ${typeof val}`);
+            gl.uniform1i(info.location, val ? 1 : 0);
+          }else{
+            if(!isBoolArray(val) || !(val instanceof Uint8Array))
+              throw new Error(`Wrong data type for uniform ${name}; expected boolean[] | Uint8Array, found ${typeof val}`);
+  
+            if(val.length !== info.size)throw new Error(`Wrong data size for uniform ${name}; expected ${info.size}, found ${val.length}`);
+            gl.uniform1iv(info.location, val);
+          }
           break;
         case E.DType.Byte:
         case E.DType.UByte:
@@ -162,12 +175,28 @@ export class GlProgram implements Disposable, Bindable{
         case E.DType.UShort:
         case E.DType.Int:
         case E.DType.UInt:
-          if(typeof val !== "number")throw new Error(`Wrong data type for uniform ${name}; expected number, found ${typeof val}`);
-          gl.uniform1i(info.location, val);
+          if(info.size === 1){
+            if(typeof val !== "number")throw new Error(`Wrong data type for uniform ${name}; expected number, found ${typeof val}`);
+            gl.uniform1i(info.location, val);
+          }else{
+            if(!isNumberArray(val) || !(val instanceof Int32Array || val instanceof Uint32Array))
+              throw new Error(`Wrong data type for uniform ${name}; expected number[] | Float32Array, found ${typeof val}`);
+  
+            if(val.length !== info.size)throw new Error(`Wrong data size for uniform ${name}; expected ${info.size}, found ${val.length}`);
+            gl.uniform1iv(info.location, val);
+          }
           break;
         case E.DType.Float:
-          if(typeof val !== "number")throw new Error(`Wrong data type for uniform ${name}; expected number, found ${typeof val}`);
-          gl.uniform1f(info.location, val);
+          if(info.size === 1){
+            if(typeof val !== "number")throw new Error(`Wrong data type for uniform ${name}; expected number, found ${typeof val}`);
+            gl.uniform1f(info.location, val);
+          }else{
+            if(!isNumberArray(val) && !(val instanceof Float32Array))
+              throw new Error(`Wrong data type for uniform ${name}; expected number[] | Float32Array, found ${typeof val}`);
+            
+            if(val.length !== info.size)throw new Error(`Wrong data size for uniform ${name}; expected ${info.size}, found ${val.length}`);
+            gl.uniform1fv(info.location, val);
+          }
           break;
         case E.DTypeVec.Float2:
         case E.DTypeVec.Float3:

@@ -4,9 +4,9 @@ precision mediump float;
 varying vec2 v_uv;
 
 uniform sampler2D u_texture;
-uniform int u_offset;
 
 void main(){
   vec4 color = texture2D(u_texture, v_uv);
-  gl_FragColor = clamp(color + float(u_offset) / 256.0, 0.0, 1.0);
+  float luminance = dot(vec4(0.299, 0.587, 0.144, 0.0), color);
+  gl_FragColor = vec4(luminance, luminance, luminance, 1.0);
 }

@@ -25,4 +25,9 @@
   padding: 8px;
   border-radius: 8px;
   background-color: var(--background-color-dark-1);
+  gap: 4px;
+}
+
+.filter-args-matrix-cell {
+  width: 40px;
 }

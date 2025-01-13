@@ -73,6 +73,46 @@ const FilterSlider: React.FC<FilterSliderProps> = ({
   );
 }
 
+interface FilterMatrixProps extends FilterArgProps{
+  value: number[];
+  onChange: (value: number[]) => void;
+}
+
+const FilterMatrix: React.FC<FilterMatrixProps> = ({
+  name,
+  value,
+  onChange,
+}) => {
+  const dimension = Math.round(Math.sqrt(value.length));
+  return (
+    <div className="flex-row space-between">
+      <p>{name}</p>
+      <table>
+        <tbody>
+          {[...Array(dimension).keys()].map(row => (
+            <tr key={row}>
+              {[...Array(dimension).keys()].map(col => (
+                <td key={col}>
+                  <input
+                    type="number"
+                    value={value[row * dimension + col]}
+                    className="filter-args-matrix-cell"
+                    onChange={e => {
+                      const newValue = [...value];
+                      newValue[row * dimension + col] = e.target.valueAsNumber;
+                      onChange(newValue);
+                    }}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 interface FilterStackItemProps{
   filterInstance: FilterInstance;
   index: number;
@@ -108,12 +148,12 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
             </button>
           </div>
         </div>
-        <h3>{filterInstance.filter.name}</h3>
+        <h3 style={{ padding: "0 8px" }}>{filterInstance.filter.name}</h3>
       </div>
       {Object.keys(filterInstance.filter.params).length > 0 && (
         <div className="flex-column filter-stack-args">
           {Object.entries(filterInstance.filter.params).map(([k, v], i) => {
-            const name = getReadableName(k);
+            const name = v.alternateName ?? getReadableName(k);
             switch(v.type){
               case "field":
                 return <FilterField
@@ -135,9 +175,15 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
                   step={v.step}
                   onChange={x => onUpdateArg(k, x)}
                 />
+              case "matrix":
+                return <FilterMatrix
+                  key={i}
+                  name={name}
+                  value={filterInstance.args[k] as number[]}
+                  onChange={m => onUpdateArg(k, m)}
+                />
               case "check":
               case "vector":
-              case "matrix":
               case "prov":
                 return <p key={i}>{name}</p>;
             }
