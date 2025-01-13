@@ -8,10 +8,12 @@ import VideoPlayer from "./components/VideoPlayer";
 import FilterStack from "./components/FilterStack";
 import { GlWrapper } from "./gl/gl-wrapper";
 import { Filter, FilterInstance } from "./impl/filter";
+import { FilterPipeline } from "./impl/filter-pipeline";
 
 function App(){
   const [filters, setFilters] = useState<FilterInstance[]>([]);
   const [filterOptions, setFilterOptions] = useState<Filter[]>([]);
+  const [pipeline, setPipeline] = useState<FilterPipeline | null>(null);
   const [glw, setGlw] = useState<GlWrapper | null>(null);
 
   const addFilter = (filter: FilterInstance) => {
@@ -22,7 +24,10 @@ function App(){
     setFilters(filters.filter((_, i) => i !== index));
   }
 
-  const onCanvasInit = useCallback((glw: GlWrapper) => setGlw(glw), []);
+  const onCanvasInit = useCallback((glw: GlWrapper) => {
+    setGlw(glw);
+    setPipeline(new FilterPipeline(glw, 1));
+  }, []);
 
   useEffect(() => {
     if(!glw){
@@ -38,7 +43,7 @@ function App(){
 
   return (
     <>
-      <VideoPlayer filters={filters} onCanvasInit={onCanvasInit}/>
+      <VideoPlayer filters={filters} pipeline={pipeline} onCanvasInit={onCanvasInit}/>
       {
         glw ? <FilterStack
           filters={filters}

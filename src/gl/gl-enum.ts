@@ -58,6 +58,14 @@ export enum DrawMode{
   TriangleFan = 6,
 }
 
+export enum FramebufferStatus{
+  Complete = 36053,
+  IncompleteAttachment = 36054,
+  IncompleteMissingAttachment = 36055,
+  IncompleteDimension = 36057,
+  Unsupported = 36061,
+}
+
 export enum ShaderType{
   Fragment = 35632,
   Vertex = 35633,
