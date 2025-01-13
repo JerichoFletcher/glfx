@@ -2,6 +2,7 @@
   box-sizing: border-box;
   padding: 10px 0;
   border-bottom: 1px solid var(--border-color-dark);
+  gap: 8px;
 }
 
 .filter-stack-button-group {
@@ -18,4 +19,10 @@
   width: 28px;
   height: 28px;
   padding: 4px;
+}
+
+.filter-stack-args {
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--background-color-dark-1);
 }

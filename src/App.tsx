@@ -1,12 +1,13 @@
 import "./App.css";
 
 import { useCallback, useEffect, useState } from "react";
-import VideoPlayer from "./components/VideoPlayer";
+import ImageDisplay from "./components/ImageDisplay";
 import FilterStack from "./components/FilterStack";
 import { GlWrapper } from "./gl/gl-wrapper";
 import { Filter, FilterInstance } from "./impl/filter";
 import { FilterPipeline } from "./impl/filter-pipeline";
 import getPresetFilterSet from "./impl/filters";
+import { UniformType } from "./gl/gl-shader-program";
 
 function App(){
   const [filters, setFilters] = useState<FilterInstance[]>([]);
@@ -35,6 +36,13 @@ function App(){
     }
   }
 
+  const updateArg = (index: number, key: string, value: UniformType) => {
+    const tgtFilter = filters[index];
+    tgtFilter.args[key] = value;
+    
+    setFilters([...filters]);
+  }
+
   const onCanvasInit = useCallback((glw: GlWrapper) => {
     setGlw(glw);
     setPipeline(new FilterPipeline(glw, 1));
@@ -51,7 +59,7 @@ function App(){
 
   return (
     <>
-      <VideoPlayer filters={filters} pipeline={pipeline} onCanvasInit={onCanvasInit}/>
+      <ImageDisplay filters={filters} pipeline={pipeline} onCanvasInit={onCanvasInit}/>
       {
         glw ? <FilterStack
           filters={filters}
@@ -60,6 +68,7 @@ function App(){
           onAddFilter={addFilter}
           onRemoveFilter={removeFilter}
           onReorderFilter={reorderFilter}
+          onUpdateArg={updateArg}
         /> : <h1 style={{ width: "30vw", padding: "10px" }}>WebGL not supported!</h1>
       }
     </>

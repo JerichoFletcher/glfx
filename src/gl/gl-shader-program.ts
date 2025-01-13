@@ -6,6 +6,8 @@ import { GlTexture } from "./gl-texture";
 import { isBoolArray, isNumberArray } from "../utils/type-guards";
 import * as E from "./gl-enum";
 
+export type UniformType = boolean | boolean[] | number | number[] | AllowSharedBufferSource | GlTexture;
+
 export type GlVertShader = GlShader & { type: E.ShaderType.Vertex };
 export type GlFragShader = GlShader & { type: E.ShaderType.Fragment };
 
@@ -143,7 +145,7 @@ export class GlProgram implements Disposable, Bindable{
     this.#glWrapper.context.gl.useProgram(null);
   }
 
-  setUniform(name: string, val: boolean | boolean[] | number | number[] | AllowSharedBufferSource | GlTexture): void{
+  setUniform(name: string, val: UniformType): void{
     usingBindables([this], () => {
       const gl = this.#glWrapper.context.gl;
       const info = this.#unifs.get(name);

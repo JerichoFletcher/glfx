@@ -1,4 +1,4 @@
-import { GlProgram, GlShader } from "../gl/gl-shader-program";
+import { GlProgram, GlShader, UniformType } from "../gl/gl-shader-program";
 import { GlWrapper } from "../gl/gl-wrapper";
 import * as E from "../gl/gl-enum";
 import { DependsOnDisposedState, Disposable } from "../intfs/disposable";
@@ -7,7 +7,13 @@ import { mat2, mat3, mat4 } from "gl-matrix";
 import { GlVAO } from "../gl/gl-vao";
 
 type FilterParam = {
-  type: "field" | "slider";
+  type: "field";
+  default: number;
+  min?: number;
+  max?: number;
+  step?: number;
+} | {
+  type: "slider";
   default: number;
   min: number;
   max: number;
@@ -28,7 +34,7 @@ type FilterParam = {
   default: mat2 | mat3 | mat4;
 } | {
   type: "prov";
-  default: boolean | boolean[] | number | number[] | AllowSharedBufferSource | GlTexture;
+  default: UniformType;
 };
 
 export interface FilterParams{
@@ -36,7 +42,7 @@ export interface FilterParams{
 }
 
 export interface FilterArgs{
-  readonly [key: string]: boolean | boolean[] | number | number[] | AllowSharedBufferSource | GlTexture;
+  [key: string]: UniformType;
 }
 
 export class Filter implements Disposable{

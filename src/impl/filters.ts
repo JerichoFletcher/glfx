@@ -11,7 +11,7 @@ export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
     new Filter(glw, "Brightness", commonVert, brightnessFrag, {
       "u_offset": {
         type: "slider",
-        default: 64,
+        default: 0,
         min: -128,
         max: 128,
         step: 1,

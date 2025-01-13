@@ -1,7 +1,7 @@
 import vertSrc from "../shaders/base.vert.glsl";
 import fragSrc from "../shaders/base.frag.glsl";
 
-import "./VideoPlayer.css";
+import "./ImageDisplay.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Canvas from "./Canvas";
 import { BufferDataUsage, BufferType, DrawMode, DType, ShaderType } from "../gl/gl-enum";
@@ -27,7 +27,7 @@ interface VideoPlayerProps{
   onCanvasInit: (glw: GlWrapper) => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
+const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
   filters,
   pipeline,
   onCanvasInit,
@@ -64,21 +64,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
     if(!pipeline)return;
     const cnv = glwRef.current.canvas;
 
-    const resizeCanvas = () => {
-      const dispW = cnv.clientWidth;
-      const dispH = cnv.clientHeight;
-      
-      if(cnv.width !== dispW || cnv.height !== dispH){
-        cnv.width = dispW;
-        cnv.height = dispH;
-
-        glwRef.current?.resizeViewport();
-      }
-    }
-    
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-
     const glw = glwRef.current;
     if(!glw)return;
 
@@ -105,11 +90,34 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
     layout.configure(vao, program);
     vao.bindElementBuffer(ebo);
 
-    const gl = glw.context.gl;
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    const render = () => {
+      const gl = glw.context.gl;
+      gl.clear(gl.COLOR_BUFFER_BIT);
+  
+      if(imgSrc && imgRef.current){
+        pipeline?.consume(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
+      }
+    }
 
-    if(imgSrc && imgRef.current){
-      pipeline?.consume(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
+    const resizeCanvas = () => {
+      const dispW = cnv.clientWidth;
+      const dispH = cnv.clientHeight;
+      
+      if(cnv.width !== dispW || cnv.height !== dispH){
+        cnv.width = dispW;
+        cnv.height = dispH;
+
+        glwRef.current?.resizeViewport();
+        render();
+      }
+    }
+    
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    render();
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
     }
   }, [glwRef, imgSrc, filters, pipeline]);
 
@@ -131,4 +139,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(({
   );
 });
 
-export default VideoPlayer;
+export default ImageDisplay;

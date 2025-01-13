@@ -4,6 +4,7 @@ import Dropdown from "./Dropdown";
 import "./FilterStack.css";
 import React from "react";
 import FilterStackItem from "./FilterStackItem";
+import { UniformType } from "../gl/gl-shader-program";
 
 interface FilterStackProps{
   glw: GlWrapper;
@@ -12,6 +13,7 @@ interface FilterStackProps{
   onAddFilter: (filter: FilterInstance) => void;
   onRemoveFilter: (index: number) => void;
   onReorderFilter: (indexFrom: number, indexTo: number) => void;
+  onUpdateArg: (index: number, key: string, value: UniformType) => void;
 }
 
 const FilterStack: React.FC<FilterStackProps> = ({
@@ -20,6 +22,7 @@ const FilterStack: React.FC<FilterStackProps> = ({
   onAddFilter,
   onRemoveFilter,
   onReorderFilter,
+  onUpdateArg,
 }) => {
   const createFilterInstance = (filter: Filter): FilterInstance => {
     return {
@@ -41,11 +44,12 @@ const FilterStack: React.FC<FilterStackProps> = ({
         <FilterStackItem
           key={i}
           filterInstance={f}
-          canMoveUp={i > 0}
-          canMoveDown={i < filters.length - 1}
+          index={i}
+          listLength={filters.length}
           onRemove={() => onRemoveFilter(i)}
           onReorderUp={() => onReorderFilter(i, i - 1)}
           onReorderDown={() => onReorderFilter(i, i + 1)}
+          onUpdateArg={(k, v) => onUpdateArg(i, k, v)}
         />
       ))}</ol>
     </div>
