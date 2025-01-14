@@ -1,12 +1,8 @@
 .filter-stack-item {
   box-sizing: border-box;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border-color-dark);
-  gap: 8px;
-}
-
-.filter-stack-button-group {
-  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--background-color-dark-1);
 }
 
 .filter-stack-button-group button {
@@ -24,7 +20,7 @@
 .filter-stack-args {
   padding: 8px;
   border-radius: 8px;
-  background-color: var(--background-color-dark-1);
+  background-color: var(--background-color-dark-0);
   gap: 4px;
 }
 

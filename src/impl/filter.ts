@@ -57,20 +57,21 @@ export interface FilterInstance{
 }
 
 export class Filter implements Disposable{
-  static readonly #filterProvidedUniforms = ["u_texture", "u_resolution"];
+  protected static readonly filterProvidedUniforms = ["u_texture", "u_resolution"];
 
   #disposed: boolean;
   #glWrapper: GlWrapper;
   #name: string;
   #prog: DependsOnDisposedState<GlProgram>;
   #params: FilterParams;
+  #next: Filter | undefined;
 
-  constructor(glWrapper: GlWrapper, name: string, vertShader: string, fragShader: string, params: FilterParams){
+  constructor(glWrapper: GlWrapper, name: string, vertSrc: string, fragSrc: string, params: FilterParams, next?: Filter){
     this.#glWrapper = glWrapper;
     this.#name = name;
 
-    const vert = GlShader.create(glWrapper, E.ShaderType.Vertex, vertShader);
-    const frag = GlShader.create(glWrapper, E.ShaderType.Fragment, fragShader);
+    const vert = GlShader.create(glWrapper, E.ShaderType.Vertex, vertSrc);
+    const frag = GlShader.create(glWrapper, E.ShaderType.Fragment, fragSrc);
     const prog = GlProgram.create(glWrapper, vert, frag);
 
     this.#prog = DependsOnDisposedState.validBeforeDisposed(this, prog);
@@ -79,7 +80,7 @@ export class Filter implements Disposable{
 
     if(!prog.uniforms.has("u_texture"))throw new Error("Invalid filter: input texture uniform 'u_texture' required");
     for(const uniform of this.#prog.value.uniforms.values()){
-      if(Filter.#filterProvidedUniforms.includes(uniform.name))continue;
+      if(Filter.filterProvidedUniforms.includes(uniform.name))continue;
 
       const param = params[uniform.name];
       if(!param)throw new Error(`Invalid filter: no parameter found for uniform '${uniform.name}'`);
@@ -155,6 +156,7 @@ export class Filter implements Disposable{
     }
 
     this.#params = params;
+    this.#next = next;
     this.#disposed = false;
   }
 
@@ -171,7 +173,7 @@ export class Filter implements Disposable{
     this.#prog.value.setUniformIfExists("u_resolution", [inTex.width, inTex.height]);
 
     for(const uniformName of this.#prog.value.uniforms.keys()){
-      if(Filter.#filterProvidedUniforms.includes(uniformName))continue;
+      if(Filter.filterProvidedUniforms.includes(uniformName))continue;
       
       const uniformArg = args[uniformName];
       let uniformVal = uniformArg.value;
@@ -203,6 +205,10 @@ export class Filter implements Disposable{
     return this.#params;
   }
 
+  get next(): Filter | null{
+    return this.#next ?? null;
+  }
+
   get isDisposed(): boolean{
     return this.#disposed;
   }
@@ -214,3 +220,16 @@ export class Filter implements Disposable{
     }
   }
 }
+
+export const GaussianFilter = (
+  glWrapper: GlWrapper,
+  name: string,
+  vertSrcX: string,
+  vertSrcY: string,
+  fragSrcX: string,
+  fragSrcY: string,
+  params: FilterParams
+) =>
+  new Filter(glWrapper, name, vertSrcX, fragSrcX, params,
+  new Filter(glWrapper, name, vertSrcY, fragSrcY, params,
+  ));

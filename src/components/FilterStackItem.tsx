@@ -152,13 +152,13 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
 }) => {
   const enabledToggleId = `filter-item-${index}-enabled`;
   return (
-    <li className="flex-column width-full filter-stack-item">
+    <li className="flex-column width-full filter-stack-item g-8">
       <div className="flex-row space-between">
-        <div className="flex-row filter-stack-button-group">
+        <div className="flex-row filter-stack-button-group g-8">
           <button type="button" onClick={() => onRemove()}>
             <img src={trashIcon}/>
           </button>
-          <div className="flex-column filter-stack-button-group">
+          <div className="flex-column filter-stack-button-group g-8">
             <button type="button" className="small" disabled={index === 0} onClick={() => onReorderUp()}>
               <img src={arrowIcon}/>
             </button>

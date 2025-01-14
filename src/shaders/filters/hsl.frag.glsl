@@ -31,6 +31,8 @@ vec3 rgbToHsl(vec3 color){
 vec3 hslToRgb(vec3 hsl){
   float h = hsl.x, s = hsl.y, l = hsl.z;
 
+  if(s == 0.0)return vec3(l, l, l);
+
   float c = s * (1.0 - abs(2.0 * l - 1.0));
   float hP = h / 60.0;
   float x = c * (1.0 - abs(mod(hP, 2.0) - 1.0));

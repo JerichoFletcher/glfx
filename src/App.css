@@ -13,6 +13,10 @@
   padding: 0;
 }
 
+.g-8 {
+  gap: 8px;
+}
+
 .full {
   width: 100%;
   height: 100%;

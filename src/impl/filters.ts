@@ -1,11 +1,15 @@
 import commonVert from "../shaders/filters/common.vert.glsl";
 import invertFrag from "../shaders/filters/negative.frag.glsl";
-import bnwFrag from "../shaders/filters/black-and-white.glsl";
+import bnwFrag from "../shaders/filters/black-and-white.frag.glsl";
 import brightnessFrag from "../shaders/filters/brightness-contrast.frag.glsl";
 import gammaFrag from "../shaders/filters/gamma.frag.glsl";
 import hslFrag from "../shaders/filters/hsl.frag.glsl";
 import binarizeFrag from "../shaders/filters/binarize.frag.glsl";
 import quantizeFrag from "../shaders/filters/quantize.frag.glsl";
+
+import gaussXVert from "../shaders/filters/blur-gaussian-x.vert.glsl";
+import gaussYVert from "../shaders/filters/blur-gaussian-y.vert.glsl";
+import gaussFrag from "../shaders/filters/blur-gaussian.frag.glsl";
 
 import convolve3Vert from "../shaders/filters/convolve-3.vert.glsl";
 import convolve3Frag from "../shaders/filters/convolve-3.frag.glsl";
@@ -13,7 +17,7 @@ import convolve5Vert from "../shaders/filters/convolve-5.vert.glsl";
 import convolve5Frag from "../shaders/filters/convolve-5.frag.glsl";
 
 import { GlWrapper } from "../gl/gl-wrapper";
-import { Filter } from "./filter";
+import { Filter, GaussianFilter } from "./filter";
 
 export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
   return [
@@ -57,14 +61,14 @@ export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
         default: 0,
         min: -1,
         max: 1,
-        step: 0.1,
+        step: 0.01,
       },
       "u_lightness": {
         type: "slider",
         default: 0,
         min: -1,
         max: 1,
-        step: 0.1,
+        step: 0.01,
       },
     }),
     new Filter(glw, "Binarize", commonVert, binarizeFrag, {
@@ -78,24 +82,33 @@ export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
     }),
     new Filter(glw, "Quantize", commonVert, quantizeFrag, {
       "u_rLevels": {
-        type: "field",
+        type: "slider",
         default: 16,
         min: 2,
         max: 64,
         step: 1,
       },
       "u_gLevels": {
-        type: "field",
+        type: "slider",
         default: 16,
         min: 2,
         max: 64,
         step: 1,
       },
       "u_bLevels": {
-        type: "field",
+        type: "slider",
         default: 16,
         min: 2,
         max: 64,
+        step: 1,
+      },
+    }),
+    GaussianFilter(glw, "Gaussian Blur", gaussXVert, gaussYVert, gaussFrag, gaussFrag, {
+      "u_radius": {
+        type: "slider",
+        default: 5,
+        min: 3,
+        max: 24,
         step: 1,
       },
     }),

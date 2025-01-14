@@ -15,8 +15,12 @@ function App(){
   const [pipeline, setPipeline] = useState<FilterPipeline | null>(null);
   const [glw, setGlw] = useState<GlWrapper | null>(null);
 
+  const setFilterStack = (newFilters: FilterInstance[]) => {
+    setFilters([...newFilters]);
+  }
+
   const addFilter = (filter: FilterInstance) => {
-    setFilters([filter, ...filters]);
+    setFilters([...filters, filter]);
   }
 
   const removeFilter = (index: number) => {
@@ -75,6 +79,7 @@ function App(){
           filters={filters}
           filterOptions={filterOptions}
           glw={glw}
+          onSetFilterStack={setFilterStack}
           onAddFilter={addFilter}
           onRemoveFilter={removeFilter}
           onReorderFilter={reorderFilter}

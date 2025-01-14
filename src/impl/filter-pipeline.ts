@@ -6,7 +6,7 @@ import { GlVAO } from "../gl/gl-vao";
 import { GlWrapper } from "../gl/gl-wrapper";
 import { usingBindables } from "../intfs/bindable";
 import { Disposable } from "../intfs/disposable";
-import { FilterInstance } from "./filter";
+import { Filter, FilterArgs, FilterInstance } from "./filter";
 
 export class FilterPipeline implements Disposable{
   #disposed: boolean;
@@ -53,14 +53,16 @@ export class FilterPipeline implements Disposable{
     let inputIndex = 1;
     let outputIndex = 0;
     
-    for(const filter of stack.filter(f => f.enabled)){
-      inputIndex = (inputIndex + 1) % 2;
-      outputIndex = (outputIndex + 1) % 2;
-
-      const inTex = this.#textures[inputIndex];
-      const outFBO = this.#framebuffers[outputIndex];
-
-      this.applyFilter(filter, vao, inTex, outFBO, mode, count, type, offset);
+    for(const filterInstance of stack.filter(f => f.enabled)){
+      for(let filter: Filter | null = filterInstance.filter; filter; filter = filter.next){
+        inputIndex = (inputIndex + 1) % 2;
+        outputIndex = (outputIndex + 1) % 2;
+  
+        const inTex = this.#textures[inputIndex];
+        const outFBO = this.#framebuffers[outputIndex];
+  
+        this.applyFilter(filter, filterInstance.args, vao, inTex, outFBO, mode, count, type, offset);
+      }
     }
 
     return [this.#textures[outputIndex], this.#framebuffers[outputIndex]];
@@ -87,7 +89,8 @@ export class FilterPipeline implements Disposable{
   }
 
   private applyFilter(
-    filterInstance: FilterInstance,
+    filter: Filter,
+    args: FilterArgs,
     vao: GlVAO,
     inTex: GlTexture,
     outFBO: GlFBO,
@@ -97,7 +100,7 @@ export class FilterPipeline implements Disposable{
     offset: GLintptr,
   ): void{
     usingBindables([outFBO], () => {
-      filterInstance.filter.apply(filterInstance.args, vao, inTex, mode, count, type, offset);
+      filter.apply(args, vao, inTex, mode, count, type, offset);
     });
   }
 

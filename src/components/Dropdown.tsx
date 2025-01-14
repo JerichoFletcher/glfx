@@ -55,7 +55,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
   return (
     <div id={id} className={`dropdown ${className}`}>
-      <button ref={buttonRef} className="dropdown-button full" onClick={onClick}>{name}</button>
+      <button ref={buttonRef} className="width-full" onClick={onClick}>{name}</button>
       <div ref={contentRef} className="dropdown-content flex-column hide">
         {options.map((opt, i) => <DropdownItem name={opt} key={i} index={i} onClickItem={onClickItem}/>)}
       </div>
