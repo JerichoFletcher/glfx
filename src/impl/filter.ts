@@ -3,7 +3,6 @@ import { GlWrapper } from "../gl/gl-wrapper";
 import * as E from "../gl/gl-enum";
 import { DependsOnDisposedState, Disposable } from "../intfs/disposable";
 import { GlTexture } from "../gl/gl-texture";
-import { mat2, mat3, mat4 } from "gl-matrix";
 import { GlVAO } from "../gl/gl-vao";
 
 type FilterParam = {
@@ -33,7 +32,8 @@ type FilterParam = {
   default: [boolean, boolean] | [boolean, boolean, boolean] | [boolean, boolean, boolean, boolean];
 })) | {
   type: "matrix";
-  default: mat2 | mat3 | mat4;
+  default: number[];
+  normalizeTo: number;
 } | {
   type: "prov";
   default: UniformType;
@@ -44,7 +44,10 @@ export interface FilterParams{
 }
 
 export interface FilterArgs{
-  [key: string]: UniformType;
+  [key: string]: {
+    value: UniformType;
+    normalizeTo?: number;
+  };
 }
 
 export interface FilterInstance{
@@ -169,7 +172,15 @@ export class Filter implements Disposable{
     for(const uniformName of this.#prog.value.uniforms.keys()){
       if(Filter.#filterProvidedUniforms.includes(uniformName))continue;
       
-      const uniformVal = args[uniformName];
+      const uniformArg = args[uniformName];
+      let uniformVal = uniformArg.value;
+      if(this.#params[uniformName].type === "matrix" && uniformArg.normalizeTo !== undefined){
+        const uniformValM = uniformVal as number[];
+        const sum = uniformValM.reduce((s, v) => s + v);
+
+        if(sum !== 0)uniformVal = uniformValM.map(v => v * uniformArg.normalizeTo! / sum);
+      }
+
       this.#prog.value.setUniform(uniformName, uniformVal);
     }
     vao.drawElements(this.#prog.value, mode, count, type, offset);

@@ -75,40 +75,53 @@ const FilterSlider: React.FC<FilterSliderProps> = ({
 
 interface FilterMatrixProps extends FilterArgProps{
   value: number[];
-  onChange: (value: number[]) => void;
+  normalizeTo: number;
+  onChange: (value: number[], normalizeTo: number) => void;
 }
 
 const FilterMatrix: React.FC<FilterMatrixProps> = ({
   name,
   value,
+  normalizeTo,
   onChange,
 }) => {
   const dimension = Math.round(Math.sqrt(value.length));
   return (
     <div className="flex-row space-between">
       <p>{name}</p>
-      <table>
-        <tbody>
-          {[...Array(dimension).keys()].map(row => (
-            <tr key={row}>
-              {[...Array(dimension).keys()].map(col => (
-                <td key={col}>
-                  <input
-                    type="number"
-                    value={value[row * dimension + col]}
-                    className="filter-args-matrix-cell"
-                    onChange={e => {
-                      const newValue = [...value];
-                      newValue[row * dimension + col] = e.target.valueAsNumber;
-                      onChange(newValue);
-                    }}
-                  />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="flex-column">
+        <table>
+          <tbody>
+            {[...Array(dimension).keys()].map(row => (
+              <tr key={row}>
+                {[...Array(dimension).keys()].map(col => (
+                  <td key={col}>
+                    <input
+                      type="number"
+                      value={value[row * dimension + col]}
+                      className="filter-args-matrix-cell"
+                      onChange={e => {
+                        const newValue = [...value];
+                        newValue[row * dimension + col] = e.target.valueAsNumber;
+                        onChange(newValue, normalizeTo);
+                      }}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex-row space-between">
+          <p>Normalize to</p>
+          <input
+            type="number"
+            value={normalizeTo}
+            className="filter-args-matrix-cell"
+            onChange={e => onChange(value, e.target.valueAsNumber)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,7 +133,7 @@ interface FilterStackItemProps{
   onRemove: () => void;
   onReorderUp: () => void;
   onReorderDown: () => void;
-  onUpdateArg: (key: string, value: UniformType) => void;
+  onUpdateArg: (key: string, value: UniformType, normalizeTo?: number) => void;
 }
 
 const FilterStackItem: React.FC<FilterStackItemProps> = ({
@@ -159,7 +172,7 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
                 return <FilterField
                   key={i}
                   name={name}
-                  value={filterInstance.args[k] as number}
+                  value={filterInstance.args[k].value as number}
                   min={v.min}
                   max={v.max}
                   step={v.step}
@@ -169,7 +182,7 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
                 return <FilterSlider
                   key={i}
                   name={name}
-                  value={filterInstance.args[k] as number}
+                  value={filterInstance.args[k].value as number}
                   min={v.min}
                   max={v.max}
                   step={v.step}
@@ -179,8 +192,9 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
                 return <FilterMatrix
                   key={i}
                   name={name}
-                  value={filterInstance.args[k] as number[]}
-                  onChange={m => onUpdateArg(k, m)}
+                  value={filterInstance.args[k].value as number[]}
+                  normalizeTo={filterInstance.args[k].normalizeTo!}
+                  onChange={(m, n) => onUpdateArg(k, m, n)}
                 />
               case "check":
               case "vector":

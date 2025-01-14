@@ -36,9 +36,9 @@ function App(){
     }
   }
 
-  const updateArg = (index: number, key: string, value: UniformType) => {
+  const updateArg = (index: number, key: string, value: UniformType, normalizeTo?: number) => {
     const tgtFilter = filters[index];
-    tgtFilter.args[key] = value;
+    tgtFilter.args[key] = { value, normalizeTo };
     
     setFilters([...filters]);
   }
