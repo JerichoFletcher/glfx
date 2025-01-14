@@ -3,6 +3,7 @@ import invertFrag from "../shaders/filters/negative.frag.glsl";
 import bnwFrag from "../shaders/filters/black-and-white.glsl";
 import brightnessFrag from "../shaders/filters/brightness-contrast.frag.glsl";
 import gammaFrag from "../shaders/filters/gamma.frag.glsl";
+import hslFrag from "../shaders/filters/hsl.frag.glsl";
 import binarizeFrag from "../shaders/filters/binarize.frag.glsl";
 import quantizeFrag from "../shaders/filters/quantize.frag.glsl";
 
@@ -39,6 +40,29 @@ export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
         min: 0.01,
         max: 7.99,
         step: 0.01,
+      },
+    }),
+    new Filter(glw, "HSL", commonVert, hslFrag, {
+      "u_hue": {
+        type: "slider",
+        default: 0,
+        min: -180,
+        max: 180,
+        step: 0.1,
+      },
+      "u_saturation": {
+        type: "slider",
+        default: 0,
+        min: -1,
+        max: 1,
+        step: 0.1,
+      },
+      "u_lightness": {
+        type: "slider",
+        default: 0,
+        min: -1,
+        max: 1,
+        step: 0.1,
       },
     }),
     new Filter(glw, "Binarize", commonVert, binarizeFrag, {
