@@ -61,14 +61,17 @@ const FilterSlider: React.FC<FilterSliderProps> = ({
   return (
     <div className="flex-row space-between">
       <p>{name}</p>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={e => onChange(e.target.valueAsNumber)}
-      />
+      <div className="flex-row">
+        <p>{value}</p>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={e => onChange(e.target.valueAsNumber)}
+        />
+      </div>
     </div>
   );
 }
@@ -133,6 +136,7 @@ interface FilterStackItemProps{
   onRemove: () => void;
   onReorderUp: () => void;
   onReorderDown: () => void;
+  onSetFilterEnabled: (enabled: boolean) => void;
   onUpdateArg: (key: string, value: UniformType, normalizeTo?: number) => void;
 }
 
@@ -143,8 +147,10 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
   onRemove,
   onReorderUp,
   onReorderDown,
+  onSetFilterEnabled,
   onUpdateArg,
 }) => {
+  const enabledToggleId = `filter-item-${index}-enabled`;
   return (
     <li className="flex-column width-full filter-stack-item">
       <div className="flex-row space-between">
@@ -162,6 +168,15 @@ const FilterStackItem: React.FC<FilterStackItemProps> = ({
           </div>
         </div>
         <h3 style={{ padding: "0 8px" }}>{filterInstance.filter.name}</h3>
+      </div>
+      <div className="flex-row">
+        <input
+          id={enabledToggleId}
+          type="checkbox"
+          checked={filterInstance.enabled}
+          onChange={() => onSetFilterEnabled(!filterInstance.enabled)}
+        />
+        <label htmlFor={enabledToggleId}>Enabled</label>
       </div>
       {Object.keys(filterInstance.filter.params).length > 0 && (
         <div className="flex-column filter-stack-args">

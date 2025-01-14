@@ -10,6 +10,7 @@ export class GlFBO implements Disposable, Bindable{
   #disposed: boolean;
   #glWrapper: GlWrapper;
   #fboHandle: DependsOnDisposedState<WebGLFramebuffer>;
+  #attachments: GlFBOAttachment[];
 
   private constructor(glWrapper: GlWrapper){
     this.#glWrapper = glWrapper;
@@ -20,6 +21,7 @@ export class GlFBO implements Disposable, Bindable{
       throw new Error(`Failed to create FBO (error code: ${err})`);
     }
     this.#fboHandle = DependsOnDisposedState.validBeforeDisposed(this, fboHandle);
+    this.#attachments = [];
     this.#disposed = false;
     this.#glWrapper.registerResource(this);
   }
@@ -44,12 +46,21 @@ export class GlFBO implements Disposable, Bindable{
     this.#glWrapper.context.gl.bindFramebuffer(this.#glWrapper.context.gl.FRAMEBUFFER, null);
   }
 
+  read<T extends ArrayBufferView>(x: GLint, y: GLint, w: GLsizei, h: GLsizei, format: GLenum, type: GLenum, buffer: T): T{
+    usingBindables([this], () => {
+      this.#glWrapper.context.gl.readPixels(x, y, w, h, format, type, buffer);
+    });
+    return buffer;
+  }
+
   attachTexture(tex: GlTexture | null): void{
     usingBindables([this], () => {
       const gl = this.#glWrapper.context.gl;
 
       tex?.bind();
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex?.texture ?? null, 0);
+
+      if(tex)this.#attachments.push(tex);
     });
   }
 
@@ -59,6 +70,10 @@ export class GlFBO implements Disposable, Bindable{
 
   get fbo(): WebGLFramebuffer{
     return this.#fboHandle.value;
+  }
+
+  get attachments(): ReadonlyArray<GlFBOAttachment>{
+    return this.#attachments;
   }
 
   get status(): FramebufferStatus{

@@ -9,6 +9,8 @@ import quantizeFrag from "../shaders/filters/quantize.frag.glsl";
 
 import convolve3Vert from "../shaders/filters/convolve-3.vert.glsl";
 import convolve3Frag from "../shaders/filters/convolve-3.frag.glsl";
+import convolve5Vert from "../shaders/filters/convolve-5.vert.glsl";
+import convolve5Frag from "../shaders/filters/convolve-5.frag.glsl";
 
 import { GlWrapper } from "../gl/gl-wrapper";
 import { Filter } from "./filter";
@@ -105,6 +107,20 @@ export default function getPresetFilterSet(glw: GlWrapper): Filter[]{
           1, 1, 1,
           1, 1, 1,
           1, 1, 1,
+        ],
+        normalizeTo: 1,
+      },
+    }),
+    new Filter(glw, "Convolution 5x5", convolve5Vert, convolve5Frag, {
+      "u_kernel[0]": {
+        type: "matrix",
+        alternateName: "Kernel",
+        default: [
+          1, 4, 7, 4, 1,
+          4, 16, 26, 16, 4,
+          7, 26, 41, 26, 7,
+          4, 16, 26, 16, 4,
+          1, 4, 7, 4, 1,
         ],
         normalizeTo: 1,
       },

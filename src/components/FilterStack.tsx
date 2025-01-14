@@ -13,6 +13,7 @@ interface FilterStackProps{
   onAddFilter: (filter: FilterInstance) => void;
   onRemoveFilter: (index: number) => void;
   onReorderFilter: (indexFrom: number, indexTo: number) => void;
+  onSetFilterEnabled: (index: number, enabled: boolean) => void;
   onUpdateArg: (index: number, key: string, value: UniformType, normalizeTo?: number) => void;
 }
 
@@ -22,11 +23,13 @@ const FilterStack: React.FC<FilterStackProps> = ({
   onAddFilter,
   onRemoveFilter,
   onReorderFilter,
+  onSetFilterEnabled,
   onUpdateArg,
 }) => {
   const createFilterInstance = (filter: Filter): FilterInstance => {
     return {
       filter,
+      enabled: true,
       args: Object.fromEntries(
         Object.entries(filter.params).map(([k, v]) => [k, {
           value: v.default,
@@ -54,6 +57,7 @@ const FilterStack: React.FC<FilterStackProps> = ({
           onRemove={() => onRemoveFilter(i)}
           onReorderUp={() => onReorderFilter(i, i - 1)}
           onReorderDown={() => onReorderFilter(i, i + 1)}
+          onSetFilterEnabled={b => onSetFilterEnabled(i, b)}
           onUpdateArg={(k, v, n) => onUpdateArg(i, k, v, n)}
         />
       ))}</ol>

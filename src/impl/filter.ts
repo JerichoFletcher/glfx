@@ -52,6 +52,7 @@ export interface FilterArgs{
 
 export interface FilterInstance{
   filter: Filter;
+  enabled: boolean;
   args: FilterArgs;
 }
 

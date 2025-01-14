@@ -34,9 +34,11 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
 }) => {
   const inpRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const btnOutRef = useRef<HTMLButtonElement>(null);
   const glwRef = useRef<GlWrapper | null>(null);
 
   const [imgSrc, setImgSrc] = useState("");
+  const [imgName, setImgName] = useState("");
 
   const onInit = useCallback((glwVal: GlWrapper) => {
     onCanvasInit(glwVal);
@@ -56,6 +58,7 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
       if(oldUrl)URL.revokeObjectURL(oldUrl);
 
       imgRef.current.src = url;
+      setImgName(file.name);
     }
   }
 
@@ -67,6 +70,7 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
     const glw = glwRef.current;
     if(!glw)return;
 
+    const gl = glw.context.gl;
     const vert = GlShader.create(glw, ShaderType.Vertex, vertSrc);
     const frag = GlShader.create(glw, ShaderType.Fragment, fragSrc);
     const program = GlProgram.create(glw, vert, frag);
@@ -91,11 +95,10 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
     vao.bindElementBuffer(ebo);
 
     const render = () => {
-      const gl = glw.context.gl;
       gl.clear(gl.COLOR_BUFFER_BIT);
   
       if(imgSrc && imgRef.current){
-        pipeline?.consume(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
+        pipeline?.render(filters, imgRef.current, vao, program, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
       }
     }
 
@@ -114,12 +117,54 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
     
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
+
+    const onSaveResult = () => {
+      if(pipeline && imgRef.current){
+        const [tex, fbo] = pipeline.consume(filters, imgRef.current, vao, DrawMode.TriangleFan, eData.length, DType.UByte, 0);
+        const outImgBuf = fbo.read(
+          0, 0, tex.width, tex.height,
+          gl.RGBA, gl.UNSIGNED_BYTE,
+          new Uint8Array(tex.width * tex.height * 4),
+        );
+
+        const outCnv = document.createElement("canvas");
+        outCnv.width = tex.width;
+        outCnv.height = tex.height;
+
+        const ctx2d = outCnv.getContext("2d");
+        if(!ctx2d){
+          alert("Cannot save image: Canvas 2D rendering context not supported");
+          return;
+        }
+        const imgData = ctx2d.createImageData(tex.width, tex.height);
+        imgData.data.set(outImgBuf);
+
+        ctx2d.putImageData(imgData, 0, 0);
+        ctx2d.save();
+        ctx2d.scale(1, -1);
+        ctx2d.translate(0, -tex.height);
+        ctx2d.drawImage(outCnv, 0, 0);
+        
+        const link = document.createElement("a");
+        link.href = outCnv.toDataURL();
+        link.download = imgName;
+        link.click();
+
+        link.remove();
+        outCnv.remove();
+      }
+    }
+
+    const currBtnOut = btnOutRef.current;
+    currBtnOut?.addEventListener("click", onSaveResult);
+    
     render();
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      currBtnOut?.removeEventListener("click", onSaveResult);
     }
-  }, [glwRef, imgSrc, filters, pipeline]);
+  }, [glwRef, imgSrc, imgName, filters, pipeline]);
 
   return (
     <>
@@ -129,6 +174,7 @@ const ImageDisplay: React.FC<VideoPlayerProps> = React.memo(({
         </div>
         <div id="video-controls" className="flex-row">
           <button type="button" onClick={() => inpRef.current?.click()}>Select file...</button>
+          <button ref={btnOutRef} type="button" disabled={!imgSrc}>Save result</button>
         </div>
       </div>
       <>

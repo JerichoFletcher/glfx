@@ -36,6 +36,15 @@ function App(){
     }
   }
 
+  const setFilterEnabled = (index: number, enabled: boolean) => {
+    const tgtFilter = filters[index];
+    
+    if(tgtFilter.enabled !== enabled){
+      tgtFilter.enabled = enabled;
+      setFilters([...filters]);
+    }
+  }
+
   const updateArg = (index: number, key: string, value: UniformType, normalizeTo?: number) => {
     const tgtFilter = filters[index];
     tgtFilter.args[key] = { value, normalizeTo };
@@ -69,6 +78,7 @@ function App(){
           onAddFilter={addFilter}
           onRemoveFilter={removeFilter}
           onReorderFilter={reorderFilter}
+          onSetFilterEnabled={setFilterEnabled}
           onUpdateArg={updateArg}
         /> : <h1 style={{ width: "30vw", padding: "10px" }}>WebGL not supported!</h1>
       }
